@@ -49,14 +49,14 @@ class GameMDP(gym.Env):
         self.actions = self.game_env.getActionSet()
         self.action_set = range(len(self.actions))
 
-    def getState(self):
+    def get_state(self):
         state = self.game_env.getGameState()
         return state
 
     def step(self, action):
         reward = self.game_env.act(self.actions[action])
         game_over = self.game_env.game_over()
-        next_state = self.getState()
+        next_state = self.get_state()
         return reward, next_state, game_over
 
     def reset(self):
@@ -73,7 +73,9 @@ for i in range(10000):
     while not game_over:
         action = np.random.choice([0, 1])
         reward, next_state, game_over = game.step(action)
-        score += 1
+        # print(reward)
+        if reward >= 1:
+            score += 1
     scores.append(score)
     game.reset()
 
