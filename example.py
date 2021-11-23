@@ -1,9 +1,9 @@
 import numpy as np
 from agents import Random
-
+from game import GameMDP
 
 def main():
-    agent = Random()
+    agent = Random(game=GameMDP())
     agent.train()
     scores = agent.evaluate(epochs=10000)
     print("Min: {}".format(np.amin(scores)))
