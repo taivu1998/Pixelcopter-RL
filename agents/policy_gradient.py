@@ -5,7 +5,7 @@ import random
 from tqdm import tqdm
 from time import sleep
 
-class QLearning(object):
+class PolicyGradient(object):
 
     def __init__(self, game=None, args=None):
         self.game = game
@@ -14,7 +14,7 @@ class QLearning(object):
         self.actions = [0, 1]
 
     def train(self):
-        with tqdm(total=self.args['train_epochs'], desc='QLearning Train Progress Bar') as pbar:
+        with tqdm(total=self.args['train_epochs'], desc='PolicyGradient Train Progress Bar') as pbar:
             scores = []
             for i in range(self.args['train_epochs']):
                 pbar.update(1)
@@ -27,7 +27,7 @@ class QLearning(object):
                     self.update(s, a, r, s_n, lr=self.args['lr'], discount_factor=self.args['discount_factor'])
 
     def evaluate(self, epochs=1000):
-        with tqdm(total=epochs, desc='QLearning Evaluate Progress Bar') as pbar:
+        with tqdm(total=epochs, desc='PolicyGradient Evaluate Progress Bar') as pbar:
             scores = []
             for i in range(epochs):
                 pbar.update(1)
