@@ -1,10 +1,16 @@
 from .random_model import Random
 from .qlearning import QLearning
+from .sarsaLambda import SarsaLambda
+from .sarsa import Sarsa
+from .qLambda import QLambda
 from game import GameMDP, DiscretizedGameMDP
 
 MODEL_TYPES = {
     'random': Random,
     'qlearning': QLearning,
+    'sarsa': Sarsa,
+    'qLambda': QLambda,
+    'sarsaLambda': SarsaLambda,
 }
 
 MDP_TYPES = {

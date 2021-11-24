@@ -1,5 +1,5 @@
 import numpy as np
-from agents import QLearning
+from agents import sarsa
 from game import DiscretizedGameMDP
 from agents import Trainer
 
@@ -25,10 +25,10 @@ from agents import Trainer
 def main():
     args = {
         'mdp_type': 'discretized',
-        'model_type': 'qlearning',
-        'grid_size': 14,
-        'lr': 0.05,
-        'discount_factor': 0.97,
+        'model_type': 'sarsa',
+        'grid_size': 7,
+        'lr': 0.02, # alpha
+        'discount_factor': 0.9, # gamma
         'order': 'backward',
         'train_epochs': 10000,
         'eval_epochs': 10000,

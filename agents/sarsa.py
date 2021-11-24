@@ -5,17 +5,24 @@ import random
 from tqdm import tqdm
 from time import sleep
 
-class QLearning(object):
+class Sarsa(object):
 
     def __init__(self, game=None, args=None):
         self.game = game
         self.args = args
         self.Q_values = defaultdict(float)
+        # N is the trace (tracks state-action pairs)
+        self.N = defaultdict(float)
         self.actions = [0, 1]
+        #### translate these
+        self.recent_tuple = None  # most recent experience tuple (s,a,r)
+        self.trace_decay = None  # trace decay rate (common to use between 0 and 1)
+
 
     def train(self):
-        with tqdm(total=self.args['train_epochs'], desc='QLearning Train Progress Bar') as pbar:
-            scores = []
+        scores = []
+
+        with tqdm(total=self.args['train_epochs'], desc= 'Sarsa Train Progress Bar') as pbar:
             for i in range(self.args['train_epochs']):
                 pbar.update(1)
                 samples, score = self.run_simulation(epsilon=self.args['epsilon'])
@@ -24,11 +31,11 @@ class QLearning(object):
                 if self.args['order'] == 'backward':
                     samples = reversed(samples)
                 for (s, a, r, s_n) in samples:
-                    self.update(s, a, r, s_n, lr=self.args['lr'], discount_factor=self.args['discount_factor'])
+                    self.updateSarsa(s, a, r, s_n, lr=self.args['lr'], discount_factor=self.args['discount_factor'])
 
     def evaluate(self, epochs=1000):
-        with tqdm(total=epochs, desc='QLearning Evaluate Progress Bar') as pbar:
-            scores = []
+        scores = []
+        with tqdm(total=epochs, desc='Sarsa Evaluate Progress Bar') as pbar:
             for i in range(epochs):
                 pbar.update(1)
                 samples, score = self.run_simulation(epsilon=0)
@@ -50,9 +57,12 @@ class QLearning(object):
             score += point
         return samples, score
 
-    def update(self, s, a, r, s_n, lr, discount_factor):
-        a_n, q_value_n = self.policy(s_n)
-        self.Q_values[(s, a)] = self.Q_values[(s, a)] + lr * (r + discount_factor * q_value_n - self.Q_values[(s, a)])
+    def updateSarsa(self, s, a, r, s_n, lr, discount_factor):
+        if self.recent_tuple is not None:
+            recentStateAction = (self.recent_tuple[0], self.recent_tuple[1]) # tuple of most recent state-action pair
+            self.Q_values[recentStateAction] += lr * (r + discount_factor * self.Q_values[(s, a)]
+                                                        - self.Q_values[recentStateAction])
+        self.recent_tuple = (s, a, r)
 
     def pick_action(self, s, epsilon=0):
         if random.random() < epsilon:
