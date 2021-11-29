@@ -17,23 +17,30 @@ class SarsaLambda(object):
         # most recent experience tuple (s,a,r) is used in updateSarsaLambda
         self.recent_tuple = None
         # trace decay rate (common to use between 0 and 1)
-        self.trace_decay = None
+        self.trace_decay = self.args['trace_decay']
+        self.discount_factor = self.args['discount_factor']
+        self.lr = self.args['lr']
 
     def train(self):
         scores = []
+        epsilon = self.args['epsilon']
+        min_epsilon = 0
+        epsilon_decay = self.args['epsilon_decay']
 
         with tqdm(total=self.args['train_epochs'], desc= 'sarsaLambda Train Progress Bar') as pbar:
             for i in range(self.args['train_epochs']):
                 pbar.update(1)
-                samples, score = self.run_simulation(epsilon=self.args['epsilon'])
+                samples, score = self.run_simulation(epsilon=epsilon)
                 scores.append(score)
 
                 if self.args['order'] == 'backward':
                     samples = reversed(samples)
                 for (s, a, r, s_n) in samples:
-                    self.updateSarsaLambda(s, a, r, s_n, lr=self.args['lr'],
-                                           discount_factor=self.args['discount_factor'],
-                                           trace_decay=self.args['trace_decay'])
+                    self.updateSarsaLambda(s, a, r, s_n, lr=self.lr,
+                                           discount_factor=self.discount_factor,
+                                           trace_decay=self.trace_decay)
+                epsilon *= epsilon_decay
+                epsilon = max(epsilon, min_epsilon)
 
     def evaluate(self, epochs=1000):
         scores = []
