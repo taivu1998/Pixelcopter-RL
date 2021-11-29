@@ -3,6 +3,7 @@ from .qlearning import QLearning
 from .sarsaLambda import SarsaLambda
 from .sarsa import Sarsa
 from .qLambda import QLambda
+from .policyGradient import PolicyGradient
 from game import GameMDP, DiscretizedGameMDP
 
 MODEL_TYPES = {
@@ -11,6 +12,7 @@ MODEL_TYPES = {
     'sarsa': Sarsa,
     'qLambda': QLambda,
     'sarsaLambda': SarsaLambda,
+    'policyGradient': PolicyGradient,
 }
 
 MDP_TYPES = {

@@ -8,15 +8,16 @@ def main():
     args = {
         'mdp_type': 'discretized',
         'model_type': 'qLambda',
-        'grid_size': 14,
+        'grid_size': 17,
         'lr': 0.05, # alpha
-        'discount_factor': 0.9, # gamma
-        'order': 'backward',
-        'train_epochs': 100000,
-        'eval_epochs': 10000,
-        'epsilon': 0.2,
+        'discount_factor': 0.94, # gamma
+        'order': 'forward',
+        'train_epochs': 10000,
+        'eval_epochs': 5000,
+        'epsilon': 1,
+        'epsilon_decay': 0.99,
         # Generally, trace decay 0.9 works well but try [0, 0.5, 0.8, 0.9, 0.95, 1.0]
-        'trace_decay': 0.95 #trace decay rate (common to use between 0 and 1)
+        'trace_decay': 0.4, # trace decay rate (common to use between 0 and 1)
 
     }
     trainer = Trainer(args=args)

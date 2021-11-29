@@ -6,14 +6,14 @@ from agents import Trainer
 def main():
     args = {
         'mdp_type': 'discretized',
-        'model_type': 'policy_gradient',
-        'grid_size': 14,
-        'lr': 0.05,
-        'discount_factor': 0.90,
-        'order': 'backward',
-        'train_epochs': 100000,
-        'eval_epochs': 10000,
-        'epsilon': 0.2,
+        'model_type': 'policyGradient',
+        'grid_size': 16,
+        'lr': 0.003, # alpha
+        'discount_factor': 0.98, # gamma
+        'order': 'forward',
+        'train_epochs': 1000,
+        'eval_epochs': 1000,
+        'hidden_layers': 10, # hidden layer size
     }
     trainer = Trainer(args=args)
     trainer.train()

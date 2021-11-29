@@ -16,15 +16,26 @@ class QLearning(object):
     def train(self):
         with tqdm(total=self.args['train_epochs'], desc='QLearning Train Progress Bar') as pbar:
             scores = []
+            epsilon = self.args['epsilon']
+            min_epsilon = 0.01
+            epsilon_decay = self.args['epsilon_decay']
+
             for i in range(self.args['train_epochs']):
                 pbar.update(1)
-                samples, score = self.run_simulation(epsilon=self.args['epsilon'])
+
+                samples, score = self.run_simulation(epsilon=epsilon)
                 scores.append(score)
 
                 if self.args['order'] == 'backward':
                     samples = reversed(samples)
                 for (s, a, r, s_n) in samples:
                     self.update(s, a, r, s_n, lr=self.args['lr'], discount_factor=self.args['discount_factor'])
+
+                # tried reward-based epsilon decay from https://aakash94.github.io/Reward-Based-Epsilon-Decay/,
+                # but didn't perform that well.
+                # will keep exponential epsilon decay each training epoch (epsilon *= 0.999) - very slow decay
+                epsilon *= epsilon_decay
+                epsilon = max(epsilon, min_epsilon)
 
     def evaluate(self, epochs=1000):
         with tqdm(total=epochs, desc='QLearning Evaluate Progress Bar') as pbar:
@@ -42,6 +53,7 @@ class QLearning(object):
         score = 0
         s = self.game.get_state()
         s_n = None
+
         while not game_over:
             a, _ = self.pick_action(s, epsilon=epsilon)
             r, s_n, game_over, point = self.game.step(a)
