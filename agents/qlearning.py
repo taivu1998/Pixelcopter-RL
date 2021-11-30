@@ -15,10 +15,11 @@ class QLearning(object):
 
     def train(self):
         with tqdm(total=self.args['train_epochs'], desc='QLearning Train Progress Bar') as pbar:
-            scores = []
             epsilon = self.args['epsilon']
             min_epsilon = 0.01
             epsilon_decay = self.args['epsilon_decay']
+
+            scores = []
 
             for i in range(self.args['train_epochs']):
                 pbar.update(1)

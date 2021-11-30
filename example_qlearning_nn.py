@@ -1,6 +1,6 @@
 
 import numpy as np
-# from agents import QLearning_KNN
+from agents import QLearning_NN
 from game import DiscretizedGameMDP
 from agents import Trainer
 

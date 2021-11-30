@@ -1,3 +1,4 @@
+
 import numpy as np
 from agents import PolicyGradient
 from game import DiscretizedGameMDP
@@ -7,13 +8,15 @@ def main():
     args = {
         'mdp_type': 'discretized',
         'model_type': 'policyGradient',
-        'grid_size': 16,
-        'lr': 0.003, # alpha
-        'discount_factor': 0.98, # gamma
+        'grid_size': 14,
+        # lr: 0.01 better than ?
+        'lr': 0.01, # alpha
+        # discount factor: 989 better 98 better than 99
+        'discount_factor': 0.989, # gamma
         'order': 'forward',
-        'train_epochs': 1000,
-        'eval_epochs': 1000,
-        'hidden_layers': 10, # hidden layer size
+        'train_epochs': 4000,
+        'eval_epochs': 2000,
+        'hidden_layers': 10, # TODO: try gradient policy w/ neural network
     }
     trainer = Trainer(args=args)
     trainer.train()
