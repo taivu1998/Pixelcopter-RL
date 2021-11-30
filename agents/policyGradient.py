@@ -1,185 +1,146 @@
-import torch as torch
 import numpy as np
+import scipy.signal  # for calculating discounted rewards fast
+from scipy.special import expit # expit is optimized logistic function
 from game import GameMDP
 from collections import defaultdict
 import random
 from tqdm import tqdm
 from time import sleep
-#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
-class Softmax(torch.nn.Module):
-    """
-    Neural network that uses pytorch Softmax to choose an action
-    TODO: try other policies (Adam?)
-    """
-    def __init__(self, total_states, hidden_layers, total_actions):
-        super(Softmax, self).__init__()
-        self.linear1 = torch.nn.Linear(total_states, hidden_layers)
-        self.linear2 = torch.nn.Linear(hidden_layers, total_actions)
-
-        # TODO: I think I need to store log_probs and rewards before feed forward,
-        # but not sure. Need to figure out
-        self.saved_log_probs = []
-        self.rewards = []
-
-    def forward(self, inputs):
-        inputs = torch.nn.functional.relu(self.linear1(inputs))
-        action_scores = self.linear2(inputs)
-        return torch.nn.functional.softmax(action_scores, dim=-1) #TODO: check dimensions
+np.random.seed(2)
 
 class PolicyGradient(object):
-    """
-    Policy Gradient training and evaluation
-    TODO: try policies other than softmax
-    """
+
     def __init__(self, game=None, args=None):
         self.game = game
         self.args = args
         self.actions = [0, 1]
+        # initialize 7 parameters to between -1 and 1
+        self.parameters = np.random.uniform(low=-1, high=1, size=len(self.game.get_state()))
+        print('this is self.parameters', self.parameters)
         self.lr = self.args['lr']
         self.discount_factor = self.args['discount_factor']
-        self.total_actions = 2 # actions are 0 or 1 (down or up)
+        self.total_observations = None
+        self.total_actions = len(self.actions) # actions are 0 or 1
         self.train_epochs = self.args['train_epochs']
-        self.hidden_layers = self.args['hidden_layers']
-        # store the number of states/observations
-        self.total_states = len(self.game.get_state())
-        self.policy = Softmax(self.total_states, self.hidden_layers, self.total_actions)
-        self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
 
-    def sample_action(self, state):
-        # policy = Softmax(self.total_states, self.hidden_layers, self.total_actions)
-        # policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
-        # get state
-        state = torch.from_numpy(state).float().unsqueeze(0)
-        # TODO: object not callable error
-        probabilities = self.policy(state)
-        m = torch.distributions.Categorical(probabilities)
-        action = m.sample()
-        log_probability = m.log_prob(action)
-        return action.item(), log_probability
-        #############################
+    def discounted_rewards(self, rewards):
+        # discounted cumulative rewards
+        # https://stackoverflow.com/questions/47970683/vectorize-a-numpy-discount-calculation - shows how to use
+        # signal.lfilter()
+        discounted_rewards = scipy.signal.lfilter([1], [1, float(-self.discount_factor)], rewards[::-1], axis=0)[::-1]
 
-        # probabilities = self.policy_optimizer(state)
-        # m = torch.distributions.Categorical(probabilities)
-        # action = m.sample()
-        # log_probability = m.log_prob(action)
-        # # return action.item(), log_probability
+        # Normalizing discounted rewards avoids outlier variability in rewards
+        # TODO: research if normalizing reduces exploration
+        normalized_discounted_rewards = self.normalized_discounted_rewards(discounted_rewards)
+        return normalized_discounted_rewards
 
-    def discount_rewards(self, rewards):
-        # temporally adjusted discounted rewards
-        discounted_rewards = []
-        # accumulated rewards initialized to zero
-        cumulative_rewards = 0
-        # start w/ rewards at end of trajectory
-        for reward in rewards[::-1]:
-            cumulative_rewards = reward + (cumulative_rewards * self.discount_factor)
-            discounted_rewards.insert(0, cumulative_rewards)
-        # normalize the discounted rewards to avoid outlier variability in rewards
-        # TODO: try w/o normalization
-        discounted_rewards = torch.tensor((discounted_rewards - np.mean(discounted_rewards))
-                                          / np.std(discounted_rewards) + float(1e-9))
-        return discounted_rewards
+    def normalized_discounted_rewards(self, discounted_rewards):
+        mean = np.mean(discounted_rewards)
+        std = np.clip(np.std(discounted_rewards), a_min=1e-10, a_max=None)  # clip to prevent divide by zero
+        return (discounted_rewards - mean) / std
+
+    def probabilities(self, x):
+        """
+        returns probabilities of actions 0 or 1 (down or up)
+        """
+        # expit scipy optimized is logistic function
+        prob_of_action_0 = expit(np.dot(x, self.parameters))
+        # prob. of action 1 is inverse of prob. of action 0
+        prob_of_action_1 = 1 - prob_of_action_0
+        return np.array([prob_of_action_0, prob_of_action_1])
+
+    def gradient_log_probabilities(self, x):
+        # gradient log probabilities
+        logistic = expit(np.dot(x, self.parameters))
+        gradient_log_prob_action_0 = x - (x * logistic)
+        gradient_log_prob_action_1 = - (x * logistic)
+        return gradient_log_prob_action_0, gradient_log_prob_action_1
+
 
     def train(self):
         with tqdm(total=self.train_epochs, desc='PolicyGradient Train Progress Bar') as pbar:
             scores = []
-            epoch_rewards = []
             for i in range(self.train_epochs):
                 pbar.update(1)
 
                 # run one simulation
-                # trajectory is a list of tuples in the from
-                # [(action, state, log_probability(a_t|s_t), reward)_1, ... _t]
-                score, trajectory = self.run_simulation()
+                score, rewards, states, actions, probabilities = self.run_simulation()
+
+                # track epoch scores
                 scores.append(score)
 
+                # if 'backward', reverse order
+                # if self.args['order'] == 'backward':
+                #     rewards = reversed(rewards)
+                #     states = reversed(states)
+                #     actions = reversed(actions)
+
                 # update policy
-                if self.args['order'] == 'backward':
-                    trajectory = reversed(trajectory)
-                self.update(trajectory)
-
-                # states = torch.tensor(states)
-                # actions = torch.tensor(actions)
-                # future_rewards = self.discount_rewards(rewards)
-                # rewards = torch.tensor(rewards)
-                # future_rewards = torch.tensor(future_rewards)
-
-                # track simulation total_rewards
-                # epoch_rewards.append(total_rewards)
-
+                self.update(rewards, states, actions)
 
     def evaluate(self, epochs=1000):
         with tqdm(total=epochs, desc='PolicyGradient Evaluate Progress Bar') as pbar:
             scores = []
             for i in range(epochs):
                 pbar.update(1)
-                score, trajectory = self.run_simulation()
+                score, rewards, states, actions, probabilities = self.run_simulation()
                 scores.append(score)
             return scores
 
     def run_simulation(self):
-        samples = []
-        # restarts game
         self.game.reset()
         game_over = False
-        # track score per epoch
         score = 0
-        # tracks reward per epoch
-        epoch_reward = 0
-        # observations/states stored in 7-tuple state-space by default (may change w/ discretization)
-        state = self.game.get_state() # observation is the state
-        # want to pass observations/states into neural network and output log probabilities of actions
+        # states=observations: stored in 7-tuple state-space by default (may change w/ discretization)
+        state = self.game.get_state()
+
+        # TODO: try passing states to neural network and output probabilities of actions
         # (up or down) (will sum to one)
+
+        states = [] # states/observations
+        actions = []
+        rewards = []
+        probabilities = []
 
         # trajectory stores tuples of (action, state, log_probability, reward, next_state, game_over)
         trajectory = []
-
         next_state = None
+
         while not game_over:
-            # pick action based on log_probability
-            action, log_probability = self.sample_action(np.array(state))
-            # take action and store reward, next state, and point
+            states.append(state)
+
+            action, prob = self.pick_action(state)
             reward, next_state, game_over, point = self.game.step(action)
-            # store trajectory step in trajectories
-            trajectory.append((action, state, log_probability, reward, next_state, game_over))
 
             state = next_state
             score += point
-            epoch_reward += reward
+            rewards.append(reward)
+            actions.append(action)
+            probabilities.append(prob)
 
-        # When game over, returns trajectory list and score for updating
-        # and evaluating the model
-        return score, trajectory
+        return score, np.array(rewards), np.array(states), np.array(actions), np.array(probabilities)
 
-    def update(self, trajectory):
-        """
-        trajectory is format [(action, state, log_probability, reward, next_state, game_over),...]
-        """
+    def update(self, rewards, states, actions):
+        # for every state, gets gradients for each action
+        gradient_log_probabilities = np.array([self.gradient_log_probabilities(state)[action] for
+                                               state, action in zip(states, actions)])
 
-        # store all trajectory log probabilities
-        log_probs = [tupl[2] for tupl in trajectory]
-        # store all trajectory rewards
-        rewards = [tupl[3] for tupl in trajectory]
+        # temporally adjusted discounted rewards
+        discounted_rewards = self.discounted_rewards(rewards)
 
-        # store discounted rewards
-        returns = self.discount_rewards(rewards)
+        # gradient ascend parameters
+        self.parameters = self.parameters + (self.lr * (gradient_log_probabilities.T.dot(discounted_rewards)))
+        # decay step factor each update (pg 244 Aglos for Decision Making)
+        self.lr *= 0.999 # doesn't work well. TODO: Check Mykel's optimiziation book for more details on this
 
-        loss = []
+    def pick_action(self, x):
+        # pick action in accordance with probabilities
+        probabilities = self.probabilities(x)
+        # get action from probabilities
+        action = np.random.choice([0, 1], p=probabilities)
+        return action, probabilities[action]
 
-        for log_prob, r in zip(log_probs, returns):
-            loss.append(-(log_prob * r))
 
-        loss = torch.stack(loss).sum()
-        # zero gradients before backward pass
-        self.policy_optimizer.zero_grad()
-        # get gradient of loss w.r.t learnable model parameters
-        # TODO: figure out if graph retain is necessary
-        loss.backward(retain_graph=True)
-        # loss.backward()
-        self.policy_optimizer.step()
-        # delete log_probs and rewards
-        del log_probs
-        del rewards
-        #return loss
+
 
