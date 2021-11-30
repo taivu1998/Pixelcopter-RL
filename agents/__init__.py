@@ -5,3 +5,4 @@ from .trainer import Trainer
 from .sarsa import Sarsa
 from .sarsaLambda import SarsaLambda
 from .policyGradient import PolicyGradient
+from .qlearning_funcapprox_nn import QLearningFuncApproxNN
