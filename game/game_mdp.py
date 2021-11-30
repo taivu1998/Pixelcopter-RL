@@ -40,3 +40,6 @@ class GameMDP(object):
 
     def reset(self):
         self.game_env.reset_game()
+
+    def get_state_legngth(self):
+        return len(self.features)
