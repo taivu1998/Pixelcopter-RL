@@ -13,5 +13,8 @@ class DiscretizedGameMDP(GameMDP):
 
     def get_state(self):
         state = self.game_env.getGameState()
-        state = tuple([state[feature] // self.grid_size for feature in self.features])
+        state = tuple([self.discretize(state[feature]) for feature in self.features])
         return state
+    
+    def discretize(self, value):
+        return int(self.grid_size * np.floor(value / self.grid_size))
