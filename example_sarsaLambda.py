@@ -8,16 +8,16 @@ def main():
     args = {
         'mdp_type': 'discretized',
         'model_type': 'sarsaLambda',
-        'grid_size': 17,
-        'lr': 0.05, # alpha
-        'discount_factor': 0.94, # gamma
-        'order': 'backward',
-        'train_epochs': 10000,
-        'eval_epochs': 10000,
-        'epsilon': 1,
-        'epsilon_decay': 0.99,
+        'grid_size': 20, # 1
+        'lr': 0.015, # alpha
+        'discount_factor': 0.95, # gamma
+        'order': 'forward',
+        'train_epochs': 10001,
+        'eval_epochs': 100,
+        'epsilon': 0.15,
+        'epsilon_decay': 0.995,
         # Generally, trace decay 0.9 works well but try [0, 0.5, 0.8, 0.9, 0.95, 1.0]
-        'trace_decay': 0.4 # trace decay rate (common to use between 0 and 1)
+        'trace_decay': 0.90 # trace decay rate (common to use between 0 and 1)
 
     }
     trainer = Trainer(args=args)

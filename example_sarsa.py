@@ -8,13 +8,13 @@ def main():
     args = {
         'mdp_type': 'discretized',
         'model_type': 'sarsa',
-        'grid_size': 17,
-        'lr': 0.05, # alpha
-        'discount_factor': 0.94, # gamma
+        'grid_size': 8,
+        'lr': 0.04, # alpha
+        'discount_factor': 0.95, # gamma
         'order': 'forward',
-        'train_epochs': 10000,
-        'eval_epochs': 2000,
-        'epsilon': 1,
+        'train_epochs': 20001,
+        'eval_epochs': 100,
+        'epsilon': 0.15, # try starting high and decreasing epsilon moderately
         'epsilon_decay': 0.995
     }
     trainer = Trainer(args=args)

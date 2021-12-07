@@ -9,13 +9,14 @@ def main():
     args = {
         'mdp_type': 'discretized',
         'model_type': 'qlearning_nn',
-        'grid_size': 14,
-        'lr': 0.05,
-        'discount_factor': 0.97,
+        'grid_size': 10,
+        'lr': 0.02,
+        'discount_factor': 0.92,
         'order': 'backward',
-        'train_epochs': 10000,
-        'eval_epochs': 10000,
-        'epsilon': 0.2,
+        'train_epochs': 10001,
+        'eval_epochs': 100,
+        'epsilon': 0.1,
+        'epsilon_decay': 0.995,
     }
     trainer = Trainer(args=args)
     trainer.train()

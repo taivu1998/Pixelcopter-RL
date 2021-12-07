@@ -8,15 +8,17 @@ def main():
     args = {
         'mdp_type': 'discretized',
         'model_type': 'policyGradient',
-        'grid_size': 14,
-        # lr: 0.01 better than ?
-        'lr': 0.01, # alpha
-        # discount factor: 989 better 98 better than 99
-        'discount_factor': 0.989, # gamma
+        'grid_size': 12,
+        # lr: much higher than 0.0001 seems to cause overshooting
+        'lr': 0.0001, # alpha
+        'min_lr': 0.00001,
+        'lr_decay': 0.9999,
+        # discount factor: 0.95 to 0.98 seem to be ideal
+        'discount_factor': 0.96,
         'order': 'forward',
-        'train_epochs': 4000,
-        'eval_epochs': 2000,
-        'hidden_layers': 10, # TODO: try gradient policy w/ neural network
+        'train_epochs': 20001,
+        'eval_epochs': 100,
+        'hidden_layers': 20,  # TODO: try gradient policy w/ neural network
     }
     trainer = Trainer(args=args)
     trainer.train()
